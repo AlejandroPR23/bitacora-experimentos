@@ -108,7 +108,7 @@ h1 {
   max-width: 1080px;
   margin: 0 auto 22px;
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   border: 1px solid #2C3B33;
   border-radius: 6px;
   overflow: hidden;
@@ -274,7 +274,17 @@ h1 {
   font-size: 13px;
   color: #C99A4B;
 }
-.rate-pill { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #9BB6C9; margin-left: 6px; }
+.rate-pill { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #9BB6C9; }
+.money-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: -4px; }
+.money-chip {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: #B8C2B6;
+  border: 1px solid #2C3B33;
+  border-radius: 3px;
+  padding: 3px 7px;
+}
+.money-balance { font-weight: 600; border-color: transparent; }
 .card-resultado { font-size: 12.5px; color: #9BAA9E; font-style: italic; margin: 0; line-height: 1.5; }
 .card-actions { display: flex; gap: 6px; justify-content: flex-end; align-items: center; margin-top: 4px; }
 .icon-btn {
@@ -373,7 +383,7 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: #C99A4B
 .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px; }
 
 @media (max-width: 700px) {
-  .stats { grid-template-columns: repeat(2, 1fr); }
+  .stats { grid-template-columns: repeat(3, 1fr); }
   .field-row { grid-template-columns: 1fr; }
   .header { flex-direction: column; }
   .table-wrap { font-size: 12px; }
@@ -444,7 +454,7 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: #C99A4B
   var emptyForm = {
     nombre: "", tipo: "app", categoria: "", pasos: "", fechaInicio: "",
     frecuencia: "", estado: "evaluando", calificacion: 0, efectividad: "evaluando",
-    ingresos: "", horas: "", resultado: ""
+    ingresos: "", invertido: "", horas: "", resultado: ""
   };
 
   // ---------- state ----------
@@ -495,6 +505,9 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: #C99A4B
     if (h <= 0) return null;
     return i / h;
   }
+  function balanceOf(ingresos, invertido) {
+    return (Number(ingresos) || 0) - (Number(invertido) || 0);
+  }
   function estadoOf(v) { for (var i=0;i<ESTADOS.length;i++) if (ESTADOS[i].value===v) return ESTADOS[i]; return ESTADOS[2]; }
   function tipoOf(v) { for (var i=0;i<TIPOS.length;i++) if (TIPOS[i].value===v) return TIPOS[i]; return TIPOS[0]; }
   function efOf(v) { for (var i=0;i<EFECTIVIDAD.length;i++) if (EFECTIVIDAD[i].value===v) return EFECTIVIDAD[i]; return EFECTIVIDAD[2]; }
@@ -510,17 +523,19 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: #C99A4B
 
   function computeStats() {
     var total = items.length;
-    var activos = 0, efectivos = 0, ingresos = 0;
+    var activos = 0, efectivos = 0, ingresos = 0, invertido = 0;
     var tarifas = [];
     items.forEach(function (i) {
       if (i.estado === "activo") activos++;
       if (i.efectividad === "efectiva") efectivos++;
       ingresos += Number(i.ingresos) || 0;
+      invertido += Number(i.invertido) || 0;
       var t = tarifaHora(i.ingresos, i.horas);
       if (t !== null && t > 0) tarifas.push(t);
     });
     var mejorTarifa = tarifas.length ? Math.max.apply(null, tarifas) : null;
-    return { total: total, activos: activos, efectivos: efectivos, ingresos: ingresos, mejorTarifa: mejorTarifa };
+    var balance = ingresos - invertido;
+    return { total: total, activos: activos, efectivos: efectivos, ingresos: ingresos, invertido: invertido, balance: balance, mejorTarifa: mejorTarifa };
   }
 
   function visibleItems() {
@@ -676,7 +691,9 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: #C99A4B
           '<label class="field"><span>Calificación</span><span class="stars star-input" id="f-stars"></span></label>' +
           '<label class="field"><span>Horas invertidas (total)</span><input id="f-horas" type="number" min="0" step="0.5" value="' + esc(data.horas) + '" placeholder="0"/></label>' +
         '</div>' +
-        '<label class="field"><span>Ingreso generado (USD)</span><input id="f-ingresos" type="number" min="0" step="0.01" value="' + esc(data.ingresos) + '" placeholder="0"/></label>' +
+        '<div class="field-row">' +
+          '<label class="field"><span>Ingreso generado (USD)</span><input id="f-ingresos" type="number" min="0" step="0.01" value="' + esc(data.ingresos) + '" placeholder="0"/></label>' +
+          '<label class="field"><span>Invertido / apostado (USD)</span><input id="f-invertido" type="number" min="0" step="0.01" value="' + esc(data.invertido) + '" placeholder="0"/></label>' +
         '<label class="field"><span>Resultado final / conclusión</span><textarea id="f-resultado" rows="2" placeholder="¿Qué aprendiste? ¿Vale la pena repetirlo?">' + esc(data.resultado) + '</textarea></label>' +
         '<div class="modal-actions">' +
           '<button type="button" class="btn-ghost" id="modal-cancel-btn">Cancelar</button>' +
@@ -723,6 +740,7 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: #C99A4B
     var nombre = document.getElementById("f-nombre").value.trim();
     if (!nombre) return;
     var ingresosVal = document.getElementById("f-ingresos").value;
+    var invertidoVal = document.getElementById("f-invertido").value;
     var horasVal = document.getElementById("f-horas").value;
     var payload = {
       nombre: nombre,
@@ -735,6 +753,7 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: #C99A4B
       efectividad: document.getElementById("f-efectividad").value,
       calificacion: modalRating,
       ingresos: ingresosVal === "" ? 0 : (Number(ingresosVal) || 0),
+      invertido: invertidoVal === "" ? 0 : (Number(invertidoVal) || 0),
       horas: horasVal === "" ? 0 : (Number(horasVal) || 0),
       resultado: document.getElementById("f-resultado").value,
       updatedAt: new Date().toISOString()
@@ -762,6 +781,8 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: #C99A4B
     var ef = efOf(item.efectividad);
     var estado = estadoOf(item.estado);
     var tarifa = tarifaHora(item.ingresos, item.horas);
+    var balance = balanceOf(item.ingresos, item.invertido);
+    var hasMoney = Number(item.ingresos) > 0 || Number(item.invertido) > 0;
     var actionsHtml;
     if (confirmDeleteId === item.id) {
       actionsHtml =
@@ -784,8 +805,14 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: #C99A4B
         '<div class="card-meta">' + (item.fechaInicio ? 'Desde ' + esc(item.fechaInicio) : '') + (item.frecuencia ? ' · ' + esc(item.frecuencia) : '') + '</div>' +
         '<div class="card-bottom">' +
           '<div class="efectividad" style="color:' + ef.color + '">' + ef.symbol + ' ' + esc(ef.label) + '</div>' +
-          (Number(item.ingresos) > 0 ? '<div class="ingresos">$' + Number(item.ingresos).toLocaleString() + (tarifa !== null ? '<span class="rate-pill">$' + tarifa.toFixed(1) + '/h</span>' : '') + '</div>' : '') +
+          (tarifa !== null ? '<span class="rate-pill">$' + tarifa.toFixed(1) + '/h</span>' : '') +
         '</div>' +
+        (hasMoney ?
+          '<div class="money-row">' +
+            (Number(item.invertido) > 0 ? '<span class="money-chip">Invertido $' + Number(item.invertido).toLocaleString() + '</span>' : '') +
+            '<span class="money-chip">Ingreso $' + Number(item.ingresos || 0).toLocaleString() + '</span>' +
+            '<span class="money-chip money-balance" style="color:' + (balance >= 0 ? '#8FAE8B' : '#B5564A') + '">' + (balance >= 0 ? 'Recuperas +' : 'Pierdes −') + '$' + Math.abs(balance).toLocaleString() + '</span>' +
+          '</div>' : '') +
         (item.resultado ? '<p class="card-resultado">"' + esc(item.resultado) + '"</p>' : '') +
         '<div class="card-actions">' + actionsHtml + '</div>' +
       '</article>'
@@ -796,6 +823,7 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: #C99A4B
     var ef = efOf(item.efectividad);
     var estado = estadoOf(item.estado);
     var tarifa = tarifaHora(item.ingresos, item.horas);
+    var balance = balanceOf(item.ingresos, item.invertido);
     return (
       '<tr class="table-row" data-action="edit" data-id="' + item.id + '">' +
         '<td class="table-name">' + esc(item.nombre) + '</td>' +
@@ -804,8 +832,10 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: #C99A4B
         '<td>' + (item.calificacion || 0) + '</td>' +
         '<td style="color:' + ef.color + '">' + esc(ef.label) + '</td>' +
         '<td>' + (Number(item.horas) || 0) + '</td>' +
+        '<td>$' + Number(item.invertido || 0).toLocaleString() + '</td>' +
         '<td>$' + Number(item.ingresos || 0).toLocaleString() + '</td>' +
         '<td class="table-rate">' + (tarifa !== null ? '$' + tarifa.toFixed(1) : '—') + '</td>' +
+        '<td style="color:' + (balance >= 0 ? '#8FAE8B' : '#B5564A') + '">' + (balance >= 0 ? '+' : '−') + '$' + Math.abs(balance).toLocaleString() + '</td>' +
       '</tr>'
     );
   }
@@ -838,7 +868,8 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: #C99A4B
       '<div class="stat"><div class="stat-value" style="color:#8FAE8B">' + stats.activos + '</div><div class="stat-label">activos</div></div>' +
       '<div class="stat"><div class="stat-value" style="color:#C99A4B">' + stats.efectivos + '</div><div class="stat-label">efectivos</div></div>' +
       '<div class="stat"><div class="stat-value" style="color:#C99A4B">$' + stats.ingresos.toLocaleString() + '</div><div class="stat-label">generado</div></div>' +
-      '<div class="stat"><div class="stat-value" style="color:#9BB6C9">' + (stats.mejorTarifa !== null ? '$' + stats.mejorTarifa.toFixed(1) : '—') + '</div><div class="stat-label">mejor $/hora</div></div>' +
+      '<div class="stat"><div class="stat-value" style="color:#B5564A">$' + stats.invertido.toLocaleString() + '</div><div class="stat-label">invertido</div></div>' +
+      '<div class="stat"><div class="stat-value" style="color:' + (stats.balance >= 0 ? '#8FAE8B' : '#B5564A') + '">' + (stats.balance >= 0 ? '+' : '−') + '$' + Math.abs(stats.balance).toLocaleString() + '</div><div class="stat-label">balance neto</div></div>' +
     '</div>';
 
     var filtros = [
@@ -884,7 +915,7 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: #C99A4B
       '</p></div>';
     } else if (view === "tabla") {
       html += '<div class="table-wrap"><table class="table"><thead><tr>' +
-        '<th>Nombre</th><th>Tipo</th><th>Estado</th><th>★</th><th>Efectividad</th><th>Horas</th><th>Ingreso</th><th>$/hora</th>' +
+        '<th>Nombre</th><th>Tipo</th><th>Estado</th><th>★</th><th>Efectividad</th><th>Horas</th><th>Invertido</th><th>Ingreso</th><th>$/hora</th><th>Neto</th>' +
         '</tr></thead><tbody>';
       list.forEach(function (item) { html += tableRowHtml(item); });
       html += '</tbody></table></div>';
@@ -945,4 +976,3 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: #C99A4B
 </script>
 </body>
 </html>
-
