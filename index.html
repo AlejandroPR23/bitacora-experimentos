@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Bitácora de Experimentos</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap');
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+
+body {
+  min-height: 100vh;
+  background: #16231D;
+  background-image: radial-gradient(circle at 100% 0%, rgba(201,154,75,0.06), transparent 40%);
+  color: #ECE6D3;
+  font-family: 'Inter', sans-serif;
+  padding: 28px 20px 60px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  max-width: 1080px;
+  margin: 0 auto 24px;
+  flex-wrap: wrap;
+}
+.eyebrow {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #C99A4B;
+  margin-bottom: 6px;
+}
+h1 {
+  font-family: 'Fraunces', serif;
+  font-weight: 700;
+  font-size: 34px;
+  margin: 0 0 6px;
+  color: #F2ECD9;
+}
+.subtitle {
+  font-size: 14px;
+  color: #9BAA9E;
+  max-width: 460px;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.btn-primary {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: #C99A4B;
+  color: #16231D;
+  border: none;
+  padding: 12px 18px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: transform .12s, background .12s;
+}
+.btn-primary:hover { background: #DCAE5E; transform: translateY(-1px); }
+
+.btn-ghost {
+  background: transparent;
+  border: 1px solid #3A4A40;
+  color: #ECE6D3;
+  padding: 11px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+.btn-ghost:hover { border-color: #C99A4B; }
+
+.starter-banner {
+  max-width: 1080px;
+  margin: 0 auto 22px;
+  background: #1B2A22;
+  border: 1px dashed #C99A4B;
+  border-radius: 6px;
+  padding: 14px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: #B8C2B6;
+}
+
+.link-btn {
+  background: none;
+  border: none;
+  color: #C99A4B;
+  font-size: 12px;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+}
+.link-btn:hover { color: #DCAE5E; }
+
+.stats {
+  max-width: 1080px;
+  margin: 0 auto 22px;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  border: 1px solid #2C3B33;
+  border-radius: 6px;
+  overflow: hidden;
+}
+.stat {
+  padding: 16px 14px;
+  border-right: 1px solid #2C3B33;
+  background: #1B2A22;
+}
+.stat:last-child { border-right: none; }
+.stat-value {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 24px;
+  font-weight: 500;
+  color: #F2ECD9;
+}
+.stat-label {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #7C8C7F;
+  margin-top: 2px;
+}
+
+.controls {
+  max-width: 1080px;
+  margin: 0 auto 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.filters { display: flex; gap: 8px; flex-wrap: wrap; }
+.chip {
+  background: transparent;
+  border: 1px solid #2C3B33;
+  color: #9BAA9E;
+  padding: 7px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all .12s;
+}
+.chip:hover { border-color: #C99A4B; color: #ECE6D3; }
+.chip-active {
+  background: #C99A4B;
+  border-color: #C99A4B;
+  color: #16231D;
+  font-weight: 500;
+}
+.sort-view-group { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.select-sort {
+  background: #1B2A22;
+  border: 1px solid #2C3B33;
+  color: #ECE6D3;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 13px;
+}
+.view-toggle {
+  display: flex;
+  border: 1px solid #2C3B33;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.view-btn {
+  background: #1B2A22;
+  border: none;
+  color: #9BAA9E;
+  padding: 8px 14px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.view-btn-active { background: #C99A4B; color: #16231D; font-weight: 500; }
+
+.error-banner {
+  max-width: 1080px;
+  margin: 0 auto 16px;
+  background: rgba(181, 86, 74, 0.15);
+  border: 1px solid #B5564A;
+  color: #E0A39C;
+  padding: 10px 14px;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.empty {
+  max-width: 420px;
+  margin: 60px auto;
+  text-align: center;
+  color: #7C8C7F;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.empty-icon { font-size: 28px; opacity: .6; }
+
+.grid {
+  max-width: 1080px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.card {
+  background: #1E2F26;
+  border: 1px solid #2C3B33;
+  border-radius: 8px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  position: relative;
+}
+.card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.tag {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #7C8C7F;
+  border: 1px solid #3A4A40;
+  padding: 3px 8px;
+  border-radius: 3px;
+}
+.stamp {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border: 1.5px solid;
+  border-radius: 3px;
+  padding: 3px 8px;
+  transform: rotate(-2deg);
+  white-space: nowrap;
+}
+.card-title {
+  font-family: 'Fraunces', serif;
+  font-size: 19px;
+  font-weight: 600;
+  margin: 0;
+  color: #F2ECD9;
+}
+.card-category { font-size: 12px; color: #C99A4B; margin-top: -8px; }
+.card-text { font-size: 13px; color: #B8C2B6; line-height: 1.5; margin: 0; }
+.card-meta { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #7C8C7F; }
+.card-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px dashed #2C3B33;
+  padding-top: 10px;
+}
+.efectividad { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; }
+.ingresos {
+  display: flex; align-items: center; gap: 4px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  color: #C99A4B;
+}
+.rate-pill { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #9BB6C9; margin-left: 6px; }
+.card-resultado { font-size: 12.5px; color: #9BAA9E; font-style: italic; margin: 0; line-height: 1.5; }
+.card-actions { display: flex; gap: 6px; justify-content: flex-end; align-items: center; margin-top: 4px; }
+.icon-btn {
+  background: transparent;
+  border: 1px solid #2C3B33;
+  color: #9BAA9E;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.icon-btn:hover { border-color: #C99A4B; color: #ECE6D3; }
+.icon-btn-danger:hover { border-color: #B5564A; color: #E0A39C; }
+.confirm-delete { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #E0A39C; }
+.confirm-yes, .confirm-no {
+  background: transparent;
+  border: 1px solid #3A4A40;
+  color: #ECE6D3;
+  border-radius: 3px;
+  padding: 4px 8px;
+  font-size: 11px;
+  cursor: pointer;
+}
+.confirm-yes:hover { border-color: #B5564A; }
+.confirm-no:hover { border-color: #8FAE8B; }
+
+.stars { display: inline-flex; gap: 2px; }
+.star { font-size: 16px; line-height: 1; color: #7C8C7F; cursor: default; }
+.star.filled { color: #C99A4B; }
+.star-input .star { cursor: pointer; font-size: 24px; }
+
+.table-wrap {
+  max-width: 1080px;
+  margin: 0 auto;
+  overflow-x: auto;
+  border: 1px solid #2C3B33;
+  border-radius: 8px;
+}
+.table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.table th {
+  text-align: left;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #7C8C7F;
+  padding: 10px 14px;
+  border-bottom: 1px solid #2C3B33;
+  background: #1B2A22;
+  white-space: nowrap;
+}
+.table td { padding: 10px 14px; border-bottom: 1px solid #24332B; color: #ECE6D3; }
+.table-row { cursor: pointer; transition: background .12s; }
+.table-row:hover { background: #1E2F26; }
+.table-name { font-family: 'Fraunces', serif; font-weight: 600; }
+.table-rate { font-family: 'IBM Plex Mono', monospace; color: #C99A4B; }
+
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(10, 16, 12, 0.7);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+  z-index: 50;
+}
+.modal {
+  background: #1B2A22;
+  border: 1px solid #2C3B33;
+  border-radius: 10px;
+  padding: 24px;
+  width: 100%;
+  max-width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.modal-head { display: flex; justify-content: space-between; align-items: center; }
+.modal-head h2 { font-family: 'Fraunces', serif; font-size: 22px; margin: 0; color: #F2ECD9; }
+.modal-close { background: none; border: none; color: #9BAA9E; font-size: 20px; cursor: pointer; line-height: 1; }
+.modal-close:hover { color: #ECE6D3; }
+.field { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #B8C2B6; }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+input, textarea, select {
+  background: #16231D;
+  border: 1px solid #2C3B33;
+  color: #ECE6D3;
+  padding: 9px 11px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-family: 'Inter', sans-serif;
+  resize: vertical;
+  width: 100%;
+}
+input:focus, textarea:focus, select:focus { outline: none; border-color: #C99A4B; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px; }
+
+@media (max-width: 700px) {
+  .stats { grid-template-columns: repeat(2, 1fr); }
+  .field-row { grid-template-columns: 1fr; }
+  .header { flex-direction: column; }
+  .table-wrap { font-size: 12px; }
+}
+</style>
+</head>
+<body>
+
+<div id="app"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  var STORAGE_KEY = "bitacora-experimentos-data";
+
+  var ESTADOS = [
+    { value: "activo", label: "Activo", color: "#8FAE8B" },
+    { value: "pausado", label: "Pausado", color: "#C99A4B" },
+    { value: "evaluando", label: "Evaluando", color: "#9BB6C9" },
+    { value: "descartado", label: "Descartado", color: "#B5564A" },
+  ];
+
+  var TIPOS = [
+    { value: "app", label: "App" },
+    { value: "estrategia", label: "Estrategia" },
+  ];
+
+  var EFECTIVIDAD = [
+    { value: "efectiva", label: "Efectiva", symbol: "↑", color: "#8FAE8B" },
+    { value: "no_efectiva", label: "No efectiva", symbol: "↓", color: "#B5564A" },
+    { value: "evaluando", label: "Evaluando", symbol: "?", color: "#9BB6C9" },
+  ];
+
+  var STARTER_PACK = [
+    { nombre: "Swagbucks", categoria: "Multi-tarea (encuestas, anuncios, juegos, cashback)",
+      pasos: "Crear cuenta, completar perfil. Combinar encuestas + ver videos + cashback en compras para acumular SB points. Canjear por PayPal o tarjetas de regalo.",
+      frecuencia: "Diario, 10-20 min" },
+    { nombre: "InboxDollars", categoria: "Ver anuncios + encuestas",
+      pasos: "Registrarse (bono de bienvenida $5). Ver playlists de video cortos entre tareas, sumar encuestas. Retiro mínimo $15.",
+      frecuencia: "Diario, 10-15 min" },
+    { nombre: "Nielsen Computer & Mobile Panel", categoria: "Panel pasivo de datos",
+      pasos: "Instalar la app/extensión y dejarla correr en segundo plano. No hay tareas que completar: pagan por compartir datos de uso anónimos.",
+      frecuencia: "Pasivo, sin acción diaria" },
+    { nombre: "MyPoints", categoria: "Ver videos + cashback de compras",
+      pasos: "Ver bundles de video cortos y registrar compras online para cashback. Canjear puntos por PayPal, tarjetas o millas.",
+      frecuencia: "Diario, 5-10 min" },
+    { nombre: "PrizeRebel", categoria: "Encuestas",
+      pasos: "Completar perfil de calificación, aceptar encuestas según coincidan con tu demografía. Canjear puntos acumulados.",
+      frecuencia: "Según disponibilidad de encuestas" },
+    { nombre: "Mistplay", categoria: "Jugar juegos móviles",
+      pasos: "Descargar juegos sugeridos dentro de la app, jugar para ganar 'unidades' por tiempo de juego. Canjear por gift cards.",
+      frecuencia: "Sesiones de juego, sin mínimo diario" },
+    { nombre: "JustPlay", categoria: "Jugar juegos casuales",
+      pasos: "Jugar minijuegos casuales dentro de la app. Retiro por PayPal disponible cada pocas horas, sin mínimo alto.",
+      frecuencia: "Sesiones cortas, varias veces al día si quieres" },
+    { nombre: "Solitaire Cash (Papaya Gaming)", categoria: "Torneo de habilidad con dinero real — riesgo de apuesta",
+      pasos: "Pagar entrada de torneo, competir contra jugadores de nivel similar en el mismo set de cartas. Retiro vía PayPal tras mínimo $5.",
+      frecuencia: "Por partida" },
+    { nombre: "JumpTask", categoria: "Ver anuncios / microtareas — paga en cripto",
+      pasos: "Completar microtareas y ver anuncios para ganar tokens $JMPT. Se puede hacer staking. Verificar volatilidad antes de retirar.",
+      frecuencia: "Diario, tareas cortas" },
+    { nombre: "Apps de cajas/ruleta diaria (tipo Cash Giraffe, Big Time Cash)", categoria: "Máxima sospecha de 'cuento de hadas'",
+      pasos: "Abrir cajas de recompensa o girar ruletas diarias, generalmente tras ver muchos anuncios. Mínimos de retiro altos (a veces $50+) y procesos de retiro lentos o que nunca se completan.",
+      frecuencia: "Diario, solo para comprobar por ti mismo" },
+  ];
+
+  var emptyForm = {
+    nombre: "", tipo: "app", categoria: "", pasos: "", fechaInicio: "",
+    frecuencia: "", estado: "evaluando", calificacion: 0, efectividad: "evaluando",
+    ingresos: "", horas: "", resultado: ""
+  };
+
+  // ---------- state ----------
+  var items = [];
+  var filter = "todos";
+  var sort = "recientes";
+  var view = "tarjetas";
+  var confirmDeleteId = null;
+  var saveError = null;
+  var modalEditingId = null;
+  var modalRating = 0;
+
+  // ---------- storage ----------
+  function load() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      items = raw ? JSON.parse(raw) : [];
+    } catch (e) {
+      items = [];
+    }
+  }
+  function save() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+      saveError = null;
+    } catch (e) {
+      saveError = isFileProtocol()
+        ? "No se pudo guardar: estás abriendo el archivo directamente (file://). Súbelo a GitHub Pages o ábrelo desde un servidor local para que se guarde correctamente."
+        : "No se pudo guardar. Es posible que el almacenamiento del navegador esté lleno o bloqueado (modo privado).";
+    }
+  }
+  function isFileProtocol() {
+    try { return window.location.protocol === "file:"; } catch (e) { return false; }
+  }
+  function uid() {
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  }
+
+  // ---------- helpers ----------
+  function esc(str) {
+    return String(str == null ? "" : str)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+  function tarifaHora(ingresos, horas) {
+    var i = Number(ingresos) || 0;
+    var h = Number(horas) || 0;
+    if (h <= 0) return null;
+    return i / h;
+  }
+  function estadoOf(v) { for (var i=0;i<ESTADOS.length;i++) if (ESTADOS[i].value===v) return ESTADOS[i]; return ESTADOS[2]; }
+  function tipoOf(v) { for (var i=0;i<TIPOS.length;i++) if (TIPOS[i].value===v) return TIPOS[i]; return TIPOS[0]; }
+  function efOf(v) { for (var i=0;i<EFECTIVIDAD.length;i++) if (EFECTIVIDAD[i].value===v) return EFECTIVIDAD[i]; return EFECTIVIDAD[2]; }
+
+  function starsHtml(value, size) {
+    var html = '<span class="stars">';
+    for (var n=1;n<=5;n++) {
+      html += '<span class="star' + (n<=value ? ' filled':'') + '" style="font-size:'+(size||16)+'px">' + (n<=value ? '★':'☆') + '</span>';
+    }
+    html += '</span>';
+    return html;
+  }
+
+  function computeStats() {
+    var total = items.length;
+    var activos = 0, efectivos = 0, ingresos = 0;
+    var tarifas = [];
+    items.forEach(function (i) {
+      if (i.estado === "activo") activos++;
+      if (i.efectividad === "efectiva") efectivos++;
+      ingresos += Number(i.ingresos) || 0;
+      var t = tarifaHora(i.ingresos, i.horas);
+      if (t !== null && t > 0) tarifas.push(t);
+    });
+    var mejorTarifa = tarifas.length ? Math.max.apply(null, tarifas) : null;
+    return { total: total, activos: activos, efectivos: efectivos, ingresos: ingresos, mejorTarifa: mejorTarifa };
+  }
+
+  function visibleItems() {
+    var list = items.slice();
+    if (filter !== "todos") {
+      if (filter === "efectivos") list = list.filter(function(i){ return i.efectividad === "efectiva"; });
+      else list = list.filter(function(i){ return i.estado === filter; });
+    }
+    if (sort === "recientes") {
+      list.sort(function(a,b){ return new Date(b.createdAt||0) - new Date(a.createdAt||0); });
+    } else if (sort === "calificacion") {
+      list.sort(function(a,b){ return (b.calificacion||0) - (a.calificacion||0); });
+    } else if (sort === "ingresos") {
+      list.sort(function(a,b){ return (Number(b.ingresos)||0) - (Number(a.ingresos)||0); });
+    } else if (sort === "tarifa") {
+      list.sort(function(a,b){
+        var ta = tarifaHora(a.ingresos,a.horas), tb = tarifaHora(b.ingresos,b.horas);
+        if (ta===null && tb===null) return 0;
+        if (ta===null) return 1;
+        if (tb===null) return -1;
+        return tb-ta;
+      });
+    }
+    return list;
+  }
+
+  // ---------- actions ----------
+  function setFilter(v) { filter = v; renderApp(); }
+  function setSort(v) { sort = v; renderApp(); }
+  function setView(v) { view = v; renderApp(); }
+
+  function requestDelete(id) { confirmDeleteId = id; renderApp(); }
+  function cancelDelete() { confirmDeleteId = null; renderApp(); }
+  function doDelete(id) {
+    items = items.filter(function(i){ return i.id !== id; });
+    confirmDeleteId = null;
+    save();
+    renderApp();
+  }
+
+  function loadStarterPack() {
+    var existing = {};
+    items.forEach(function(i){ existing[i.nombre.toLowerCase()] = true; });
+    var nuevos = STARTER_PACK.filter(function(s){ return !existing[s.nombre.toLowerCase()]; }).map(function(s){
+      var obj = {};
+      for (var k in emptyForm) obj[k] = emptyForm[k];
+      for (var k2 in s) obj[k2] = s[k2];
+      obj.id = uid();
+      obj.createdAt = new Date().toISOString();
+      obj.updatedAt = obj.createdAt;
+      return obj;
+    });
+    if (nuevos.length === 0) return;
+    items = nuevos.concat(items);
+    save();
+    renderApp();
+  }
+
+  function exportData() {
+    var blob = new Blob([JSON.stringify(items, null, 2)], { type: "application/json" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    var fecha = new Date().toISOString().slice(0, 10);
+    a.href = url;
+    a.download = "bitacora-experimentos-" + fecha + ".json";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  function triggerImport() {
+    var input = document.getElementById("import-input");
+    if (input) input.click();
+  }
+
+  function handleImportFile(e) {
+    var file = e.target.files && e.target.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function (ev) {
+      var parsed;
+      try {
+        parsed = JSON.parse(ev.target.result);
+      } catch (err) {
+        saveError = "El archivo no es un JSON válido. Asegúrate de elegir un archivo exportado desde esta misma app.";
+        renderApp();
+        return;
+      }
+      if (!Array.isArray(parsed)) {
+        saveError = "El archivo no tiene el formato esperado (debe ser una lista de experimentos).";
+        renderApp();
+        return;
+      }
+      var reemplazar = items.length === 0 || window.confirm(
+        "Ya tienes " + items.length + " experimento(s) guardados.\n\n" +
+        "Aceptar = REEMPLAZAR todo con lo importado.\n" +
+        "Cancelar = FUSIONAR (agregar los que no existan ya, por nombre)."
+      );
+      if (reemplazar) {
+        items = parsed;
+      } else {
+        var existing = {};
+        items.forEach(function (i) { existing[i.nombre.toLowerCase()] = true; });
+        var nuevos = parsed.filter(function (p) { return p.nombre && !existing[p.nombre.toLowerCase()]; });
+        items = nuevos.concat(items);
+      }
+      save();
+      renderApp();
+      e.target.value = "";
+    };
+    reader.readAsText(file);
+  }
+
+  // ---------- modal ----------
+  function openModal(id) {
+    modalEditingId = id || null;
+    var data = emptyForm;
+    if (id) {
+      var found = items.filter(function(i){ return i.id===id; })[0];
+      if (found) data = found;
+    }
+    modalRating = Number(data.calificacion) || 0;
+    var overlay = document.createElement("div");
+    overlay.className = "modal-overlay";
+    overlay.id = "modal-overlay";
+    overlay.innerHTML =
+      '<form class="modal" id="modal-form">' +
+        '<div class="modal-head"><h2>' + (id ? "Editar experimento" : "Nuevo experimento") + '</h2>' +
+          '<button type="button" class="modal-close" id="modal-close-btn">✕</button></div>' +
+        '<label class="field"><span>Nombre *</span>' +
+          '<input id="f-nombre" required value="' + esc(data.nombre) + '" placeholder="Ej. Mistplay, Encuestas en Swagbucks, Dropshipping en TikTok…"/></label>' +
+        '<div class="field-row">' +
+          '<label class="field"><span>Tipo</span><select id="f-tipo">' +
+            TIPOS.map(function(t){ return '<option value="'+t.value+'"'+(data.tipo===t.value?' selected':'')+'>'+t.label+'</option>'; }).join("") +
+          '</select></label>' +
+          '<label class="field"><span>Categoría</span><input id="f-categoria" value="' + esc(data.categoria) + '" placeholder="Encuestas, blogging, trading…"/></label>' +
+        '</div>' +
+        '<label class="field"><span>Pasos / cómo lo hiciste</span><textarea id="f-pasos" rows="3" placeholder="Describe brevemente el proceso que seguiste">' + esc(data.pasos) + '</textarea></label>' +
+        '<div class="field-row">' +
+          '<label class="field"><span>Fecha de inicio</span><input id="f-fecha" type="date" value="' + esc(data.fechaInicio) + '"/></label>' +
+          '<label class="field"><span>Frecuencia / duración</span><input id="f-frecuencia" value="' + esc(data.frecuencia) + '" placeholder="Ej. diario por 2 semanas"/></label>' +
+        '</div>' +
+        '<div class="field-row">' +
+          '<label class="field"><span>Estado</span><select id="f-estado">' +
+            ESTADOS.map(function(s){ return '<option value="'+s.value+'"'+(data.estado===s.value?' selected':'')+'>'+s.label+'</option>'; }).join("") +
+          '</select></label>' +
+          '<label class="field"><span>Efectividad</span><select id="f-efectividad">' +
+            EFECTIVIDAD.map(function(s){ return '<option value="'+s.value+'"'+(data.efectividad===s.value?' selected':'')+'>'+s.label+'</option>'; }).join("") +
+          '</select></label>' +
+        '</div>' +
+        '<div class="field-row">' +
+          '<label class="field"><span>Calificación</span><span class="stars star-input" id="f-stars"></span></label>' +
+          '<label class="field"><span>Horas invertidas (total)</span><input id="f-horas" type="number" min="0" step="0.5" value="' + esc(data.horas) + '" placeholder="0"/></label>' +
+        '</div>' +
+        '<label class="field"><span>Ingreso generado (USD)</span><input id="f-ingresos" type="number" min="0" step="0.01" value="' + esc(data.ingresos) + '" placeholder="0"/></label>' +
+        '<label class="field"><span>Resultado final / conclusión</span><textarea id="f-resultado" rows="2" placeholder="¿Qué aprendiste? ¿Vale la pena repetirlo?">' + esc(data.resultado) + '</textarea></label>' +
+        '<div class="modal-actions">' +
+          '<button type="button" class="btn-ghost" id="modal-cancel-btn">Cancelar</button>' +
+          '<button type="submit" class="btn-primary">Guardar experimento</button>' +
+        '</div>' +
+      '</form>';
+    document.body.appendChild(overlay);
+
+    renderStarInput();
+
+    overlay.addEventListener("click", function (e) { if (e.target === overlay) closeModal(); });
+    document.getElementById("modal-close-btn").addEventListener("click", closeModal);
+    document.getElementById("modal-cancel-btn").addEventListener("click", closeModal);
+    document.getElementById("modal-form").addEventListener("submit", function (e) {
+      e.preventDefault();
+      submitModal();
+    });
+    document.getElementById("f-nombre").focus();
+  }
+
+  function renderStarInput() {
+    var container = document.getElementById("f-stars");
+    if (!container) return;
+    var html = "";
+    for (var n = 1; n <= 5; n++) {
+      html += '<span class="star' + (n <= modalRating ? ' filled' : '') + '" data-n="' + n + '" style="font-size:24px">' + (n <= modalRating ? '★' : '☆') + '</span>';
+    }
+    container.innerHTML = html;
+    Array.prototype.forEach.call(container.querySelectorAll(".star"), function (el) {
+      el.addEventListener("click", function () {
+        modalRating = Number(el.getAttribute("data-n"));
+        renderStarInput();
+      });
+    });
+  }
+
+  function closeModal() {
+    var overlay = document.getElementById("modal-overlay");
+    if (overlay) overlay.remove();
+    modalEditingId = null;
+  }
+
+  function submitModal() {
+    var nombre = document.getElementById("f-nombre").value.trim();
+    if (!nombre) return;
+    var ingresosVal = document.getElementById("f-ingresos").value;
+    var horasVal = document.getElementById("f-horas").value;
+    var payload = {
+      nombre: nombre,
+      tipo: document.getElementById("f-tipo").value,
+      categoria: document.getElementById("f-categoria").value,
+      pasos: document.getElementById("f-pasos").value,
+      fechaInicio: document.getElementById("f-fecha").value,
+      frecuencia: document.getElementById("f-frecuencia").value,
+      estado: document.getElementById("f-estado").value,
+      efectividad: document.getElementById("f-efectividad").value,
+      calificacion: modalRating,
+      ingresos: ingresosVal === "" ? 0 : (Number(ingresosVal) || 0),
+      horas: horasVal === "" ? 0 : (Number(horasVal) || 0),
+      resultado: document.getElementById("f-resultado").value,
+      updatedAt: new Date().toISOString()
+    };
+    if (modalEditingId) {
+      items = items.map(function (it) {
+        if (it.id !== modalEditingId) return it;
+        var merged = {};
+        for (var k in it) merged[k] = it[k];
+        for (var k2 in payload) merged[k2] = payload[k2];
+        return merged;
+      });
+    } else {
+      payload.id = uid();
+      payload.createdAt = new Date().toISOString();
+      items = [payload].concat(items);
+    }
+    save();
+    closeModal();
+    renderApp();
+  }
+
+  // ---------- render ----------
+  function cardHtml(item) {
+    var ef = efOf(item.efectividad);
+    var estado = estadoOf(item.estado);
+    var tarifa = tarifaHora(item.ingresos, item.horas);
+    var actionsHtml;
+    if (confirmDeleteId === item.id) {
+      actionsHtml =
+        '<div class="confirm-delete"><span>¿Eliminar?</span>' +
+        '<button class="confirm-yes" data-action="confirm-delete" data-id="' + item.id + '">Sí</button>' +
+        '<button class="confirm-no" data-action="cancel-delete">No</button></div>';
+    } else {
+      actionsHtml =
+        '<button class="icon-btn" data-action="edit" data-id="' + item.id + '">✎ Editar</button>' +
+        '<button class="icon-btn icon-btn-danger" data-action="delete" data-id="' + item.id + '">🗑</button>';
+    }
+    return (
+      '<article class="card">' +
+        '<div class="card-top"><span class="tag">' + esc(tipoOf(item.tipo).label) + '</span>' +
+          '<div class="stamp" style="color:' + estado.color + ';border-color:' + estado.color + '">' + esc(estado.label) + '</div></div>' +
+        '<h3 class="card-title">' + esc(item.nombre) + '</h3>' +
+        (item.categoria ? '<div class="card-category">' + esc(item.categoria) + '</div>' : '') +
+        starsHtml(item.calificacion, 15) +
+        (item.pasos ? '<p class="card-text">' + esc(item.pasos) + '</p>' : '') +
+        '<div class="card-meta">' + (item.fechaInicio ? 'Desde ' + esc(item.fechaInicio) : '') + (item.frecuencia ? ' · ' + esc(item.frecuencia) : '') + '</div>' +
+        '<div class="card-bottom">' +
+          '<div class="efectividad" style="color:' + ef.color + '">' + ef.symbol + ' ' + esc(ef.label) + '</div>' +
+          (Number(item.ingresos) > 0 ? '<div class="ingresos">$' + Number(item.ingresos).toLocaleString() + (tarifa !== null ? '<span class="rate-pill">$' + tarifa.toFixed(1) + '/h</span>' : '') + '</div>' : '') +
+        '</div>' +
+        (item.resultado ? '<p class="card-resultado">"' + esc(item.resultado) + '"</p>' : '') +
+        '<div class="card-actions">' + actionsHtml + '</div>' +
+      '</article>'
+    );
+  }
+
+  function tableRowHtml(item) {
+    var ef = efOf(item.efectividad);
+    var estado = estadoOf(item.estado);
+    var tarifa = tarifaHora(item.ingresos, item.horas);
+    return (
+      '<tr class="table-row" data-action="edit" data-id="' + item.id + '">' +
+        '<td class="table-name">' + esc(item.nombre) + '</td>' +
+        '<td>' + esc(tipoOf(item.tipo).label) + '</td>' +
+        '<td style="color:' + estado.color + '">' + esc(estado.label) + '</td>' +
+        '<td>' + (item.calificacion || 0) + '</td>' +
+        '<td style="color:' + ef.color + '">' + esc(ef.label) + '</td>' +
+        '<td>' + (Number(item.horas) || 0) + '</td>' +
+        '<td>$' + Number(item.ingresos || 0).toLocaleString() + '</td>' +
+        '<td class="table-rate">' + (tarifa !== null ? '$' + tarifa.toFixed(1) : '—') + '</td>' +
+      '</tr>'
+    );
+  }
+
+  function renderApp() {
+    var stats = computeStats();
+    var list = visibleItems();
+    var root = document.getElementById("app");
+
+    var html = '<div class="wrap-inner">';
+
+    html += '<div class="header">' +
+      '<div class="header-left">' +
+        '<div class="eyebrow">cuaderno de campo</div>' +
+        '<h1>Bitácora de Experimentos</h1>' +
+        '<p class="subtitle">Cada app y estrategia que pruebas, registrada para no repetir lo que ya descartaste.</p>' +
+      '</div>' +
+      '<button class="btn-primary" id="new-btn">+ Nuevo experimento</button>' +
+    '</div>';
+
+    if (items.length === 0) {
+      html += '<div class="starter-banner">' +
+        '<span>¿Empiezas desde cero? Carga las 10 apps "demasiado fáciles para ser verdad" para probarlas tú mismo.</span>' +
+        '<button class="btn-ghost" id="starter-btn">Cargar las 10 iniciales</button>' +
+      '</div>';
+    }
+
+    html += '<div class="stats">' +
+      '<div class="stat"><div class="stat-value">' + stats.total + '</div><div class="stat-label">probados</div></div>' +
+      '<div class="stat"><div class="stat-value" style="color:#8FAE8B">' + stats.activos + '</div><div class="stat-label">activos</div></div>' +
+      '<div class="stat"><div class="stat-value" style="color:#C99A4B">' + stats.efectivos + '</div><div class="stat-label">efectivos</div></div>' +
+      '<div class="stat"><div class="stat-value" style="color:#C99A4B">$' + stats.ingresos.toLocaleString() + '</div><div class="stat-label">generado</div></div>' +
+      '<div class="stat"><div class="stat-value" style="color:#9BB6C9">' + (stats.mejorTarifa !== null ? '$' + stats.mejorTarifa.toFixed(1) : '—') + '</div><div class="stat-label">mejor $/hora</div></div>' +
+    '</div>';
+
+    var filtros = [
+      { v: "todos", l: "Todos" }, { v: "activo", l: "Activos" }, { v: "efectivos", l: "Efectivos" },
+      { v: "descartado", l: "Descartados" }, { v: "evaluando", l: "Evaluando" }
+    ];
+    html += '<div class="controls"><div class="filters">';
+    filtros.forEach(function (f) {
+      html += '<button class="chip' + (filter === f.v ? ' chip-active' : '') + '" data-action="filter" data-value="' + f.v + '">' + f.l + '</button>';
+    });
+    html += '</div><div class="sort-view-group">' +
+      '<select class="select-sort" id="sort-select">' +
+        '<option value="recientes"' + (sort==='recientes'?' selected':'') + '>Más recientes</option>' +
+        '<option value="calificacion"' + (sort==='calificacion'?' selected':'') + '>Mejor calificados</option>' +
+        '<option value="ingresos"' + (sort==='ingresos'?' selected':'') + '>Mayor ingreso</option>' +
+        '<option value="tarifa"' + (sort==='tarifa'?' selected':'') + '>Mejor $/hora</option>' +
+      '</select>' +
+      '<div class="view-toggle">' +
+        '<button class="view-btn' + (view==='tarjetas'?' view-btn-active':'') + '" data-action="view" data-value="tarjetas">Tarjetas</button>' +
+        '<button class="view-btn' + (view==='tabla'?' view-btn-active':'') + '" data-action="view" data-value="tabla">Tabla</button>' +
+      '</div>' +
+      (items.length > 0 ? '<button class="link-btn" id="starter-link-btn">+ agregar las 10 iniciales que falten</button>' : '') +
+      '<button class="link-btn" id="export-btn">↓ Exportar</button>' +
+      '<button class="link-btn" id="import-btn">↑ Importar</button>' +
+      '<input type="file" id="import-input" accept="application/json,.json" style="display:none" />' +
+    '</div></div>';
+
+    if (isFileProtocol()) {
+      html += '<div class="error-banner">Estás viendo este archivo directamente desde tu computador (file://). ' +
+        'Los datos pueden NO guardarse en algunos navegadores. Sube el archivo a GitHub Pages (ver README) para uso real, ' +
+        'o usa <strong>Exportar/Importar</strong> para mover tus datos mientras tanto.</div>';
+    }
+
+    if (saveError) {
+      html += '<div class="error-banner">' + esc(saveError) + '</div>';
+    }
+
+    if (list.length === 0) {
+      html += '<div class="empty"><div class="empty-icon">⚗</div><p>' +
+        (items.length === 0
+          ? 'Aún no hay experimentos registrados. Anota el primero — app o estrategia, lo que estés probando ahora.'
+          : 'Ningún experimento coincide con este filtro.') +
+      '</p></div>';
+    } else if (view === "tabla") {
+      html += '<div class="table-wrap"><table class="table"><thead><tr>' +
+        '<th>Nombre</th><th>Tipo</th><th>Estado</th><th>★</th><th>Efectividad</th><th>Horas</th><th>Ingreso</th><th>$/hora</th>' +
+        '</tr></thead><tbody>';
+      list.forEach(function (item) { html += tableRowHtml(item); });
+      html += '</tbody></table></div>';
+    } else {
+      html += '<div class="grid">';
+      list.forEach(function (item) { html += cardHtml(item); });
+      html += '</div>';
+    }
+
+    html += '</div>';
+    root.innerHTML = html;
+    attachListeners(root);
+  }
+
+  function attachListeners(root) {
+    var newBtn = document.getElementById("new-btn");
+    if (newBtn) newBtn.addEventListener("click", function () { openModal(null); });
+
+    var starterBtn = document.getElementById("starter-btn");
+    if (starterBtn) starterBtn.addEventListener("click", loadStarterPack);
+    var starterLinkBtn = document.getElementById("starter-link-btn");
+    if (starterLinkBtn) starterLinkBtn.addEventListener("click", loadStarterPack);
+
+    var exportBtn = document.getElementById("export-btn");
+    if (exportBtn) exportBtn.addEventListener("click", exportData);
+    var importBtn = document.getElementById("import-btn");
+    if (importBtn) importBtn.addEventListener("click", triggerImport);
+    var importInput = document.getElementById("import-input");
+    if (importInput) importInput.addEventListener("change", handleImportFile);
+
+    var sortSelect = document.getElementById("sort-select");
+    if (sortSelect) sortSelect.addEventListener("change", function (e) { setSort(e.target.value); });
+
+    Array.prototype.forEach.call(root.querySelectorAll('[data-action="filter"]'), function (el) {
+      el.addEventListener("click", function () { setFilter(el.getAttribute("data-value")); });
+    });
+    Array.prototype.forEach.call(root.querySelectorAll('[data-action="view"]'), function (el) {
+      el.addEventListener("click", function () { setView(el.getAttribute("data-value")); });
+    });
+    Array.prototype.forEach.call(root.querySelectorAll('[data-action="edit"]'), function (el) {
+      el.addEventListener("click", function () { openModal(el.getAttribute("data-id")); });
+    });
+    Array.prototype.forEach.call(root.querySelectorAll('[data-action="delete"]'), function (el) {
+      el.addEventListener("click", function (e) { e.stopPropagation(); requestDelete(el.getAttribute("data-id")); });
+    });
+    Array.prototype.forEach.call(root.querySelectorAll('[data-action="confirm-delete"]'), function (el) {
+      el.addEventListener("click", function (e) { e.stopPropagation(); doDelete(el.getAttribute("data-id")); });
+    });
+    Array.prototype.forEach.call(root.querySelectorAll('[data-action="cancel-delete"]'), function (el) {
+      el.addEventListener("click", function (e) { e.stopPropagation(); cancelDelete(); });
+    });
+  }
+
+  // ---------- init ----------
+  load();
+  renderApp();
+})();
+</script>
+</body>
+</html>
