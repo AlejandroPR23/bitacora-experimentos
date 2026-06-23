@@ -451,6 +451,70 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: #C99A4B
       frecuencia: "Diario, solo para comprobar por ti mismo" },
   ];
 
+  var TIER2_PACK = [
+    { nombre: "UserTesting", categoria: "Nivel 2 — Pago: $10 por test, vía PayPal a los 7 días (sin acumular hacia mínimo alto)",
+      pasos: "Completar el perfil y una prueba de práctica. Recibirás invitaciones a 'screeners' cortos; si calificas, grabas tu pantalla y voz navegando un sitio/app durante ~20 min.",
+      frecuencia: "1-5 invitaciones al día, pocas pasan el filtro" },
+    { nombre: "Prolific", categoria: "Nivel 2 — Pago por estudio vía PayPal, reputación de ser de las más confiables",
+      pasos: "Crear perfil demográfico detallado. Revisar estudios disponibles (filtran por tu perfil) y completarlos dentro del tiempo estimado.",
+      frecuencia: "Varía, revisar varias veces al día" },
+    { nombre: "Clickworker", categoria: "Nivel 2 — Pago: mínimo $10 para retirar, semanal vía PayPal/Payoneer",
+      pasos: "Registrarse, pasar pruebas básicas de calificación (gratis). Tomar microtareas: categorizar datos, transcripción corta, investigación web.",
+      frecuencia: "Diario, sesiones cortas" },
+    { nombre: "Pinecone Research", categoria: "Nivel 2 — Pago: $3 fijos por encuesta, sin conversión de puntos — ⚠ solo por invitación",
+      pasos: "No tiene registro abierto. Mantenerse activo en Swagbucks/PrizeRebel para aumentar probabilidad de recibir invitación, o buscar banners de invitación vigentes.",
+      frecuencia: "2-3 encuestas al mes si te invitan" },
+    { nombre: "Survey Junkie", categoria: "Nivel 2 — Comparación: tasa por hora más baja reportada ($1.50-3/h), pruébala solo para confirmar",
+      pasos: "Completar perfil, aceptar encuestas según coincidan con tu demografía.",
+      frecuencia: "Según disponibilidad" },
+    { nombre: "Respondent.io", categoria: "Nivel 2 — ⚠ Alto pago potencial ($75-200/sesión) pero con quejas reales de no pago",
+      pasos: "Aplicar a estudios publicados, completar 'screeners' (algunos muy largos y no remunerados). Si calificas, el investigador (no la plataforma) te paga directo.",
+      frecuencia: "Pocas oportunidades, muy competidas" },
+    { nombre: "User Interviews", categoria: "Nivel 2 — Pago: $50-300/hora según estudio, plataforma establecida",
+      pasos: "Completar perfil, aplicar a estudios de investigación de mercado (entrevistas, encuestas, pruebas de producto digital).",
+      frecuencia: "Varía según perfil" },
+    { nombre: "2Captcha", categoria: "Nivel 2 — Pago mínimo por tarea, retiro casi instantáneo sin mínimo alto",
+      pasos: "Resolver captchas que se presentan uno tras otro. Ingreso muy bajo por hora, útil solo para comprobar que el dinero realmente sale sin trabas.",
+      frecuencia: "El tiempo que quieras, sin compromiso" },
+    { nombre: "YouGov", categoria: "Nivel 2 — Pago: ~$4.90/hora, registro abierto, acumulación de puntos lenta",
+      pasos: "Crear cuenta, responder encuestas de opinión sobre temas de actualidad. Acumular puntos para canjear.",
+      frecuencia: "Varias encuestas por semana" },
+    { nombre: "Branded Surveys", categoria: "Nivel 2 — Mismo nivel que Survey Junkie, comparar cuál trata mejor en tu país",
+      pasos: "Completar perfil, responder encuestas. Comparar tasa de pago real contra Survey Junkie en tu propia bitácora.",
+      frecuencia: "Según disponibilidad" },
+  ];
+
+  var NIVEL2_PACK = [
+    { nombre: "Facebook Marketplace / OfertaUp (vender lo que ya tienes)",
+      categoria: "Reventa — pago inmediato, sin mínimo de retiro",
+      pasos: "Fotografiar y publicar artículos que ya no usas. Cobro en efectivo o transferencia directa al momento de la entrega — no hay 'banco' intermedio que retenga el dinero.",
+      frecuencia: "Según lo que tengas para vender" },
+    { nombre: "eBay (con Pagos Administrados)",
+      categoria: "Reventa online — depósito directo a tu cuenta bancaria",
+      pasos: "Publicar artículos con fotos y descripción clara. El dinero de cada venta se transfiere directo a tu cuenta bancaria registrada, sin necesidad de acumular un mínimo para poder retirar.",
+      frecuencia: "Según lo que tengas para vender" },
+    { nombre: "TaskRabbit (mandados, montaje de muebles, tareas)",
+      categoria: "Servicios locales — depósito directo, 1-3 días",
+      pasos: "Crear perfil con tus habilidades, esperar aprobación. Al completar una tarea, el pago llega por depósito directo en 1 a 3 días hábiles — no hay umbral de retiro, cobras por cada tarea. Tiene cuota de registro única.",
+      frecuencia: "Por tarea aceptada" },
+    { nombre: "Rover (paseo de perros / cuidado de mascotas)",
+      categoria: "Servicios locales — depósito directo automático",
+      pasos: "Crear perfil de cuidador, fijar tarifas. Dos días después de completar una reserva, el dinero se transfiere automáticamente a tu cuenta bancaria vía Stripe, sin que tengas que solicitar el retiro ni alcanzar un mínimo.",
+      frecuencia: "Por reserva completada" },
+    { nombre: "DoorDash",
+      categoria: "Delivery — pago diario disponible (Fast Pay)",
+      pasos: "Registrarse, verificación de antecedentes. Puedes cobrar semanalmente por depósito automático o usar 'Fast Pay' para retirar lo ganado cada día por una pequeña comisión, sin mínimo alto de retiro.",
+      frecuencia: "Turnos flexibles, cuando quieras" },
+    { nombre: "Uber Eats",
+      categoria: "Delivery — cobro diario instantáneo",
+      pasos: "Registrarse, verificación de antecedentes. Permite cobrar tus ganancias el mismo día con retiro instantáneo (comisión pequeña), además del depósito semanal automático.",
+      frecuencia: "Turnos flexibles, cuando quieras" },
+    { nombre: "Instacart (shopper)",
+      categoria: "Compras y entrega de mercado — cobro diario instantáneo",
+      pasos: "Registrarse como shopper. Cada pedido completado se suma a tu saldo, con opción de retiro instantáneo diario por una comisión pequeña, sin esperar a un mínimo alto.",
+      frecuencia: "Turnos flexibles, cuando quieras" },
+  ];
+
   var emptyForm = {
     nombre: "", tipo: "app", categoria: "", pasos: "", fechaInicio: "",
     frecuencia: "", estado: "evaluando", calificacion: 0, efectividad: "evaluando",
@@ -576,10 +640,28 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: #C99A4B
     renderApp();
   }
 
-  function loadStarterPack() {
+  function loadPack(pack) {
     var existing = {};
     items.forEach(function(i){ existing[i.nombre.toLowerCase()] = true; });
-    var nuevos = STARTER_PACK.filter(function(s){ return !existing[s.nombre.toLowerCase()]; }).map(function(s){
+    var nuevos = pack.filter(function(s){ return !existing[s.nombre.toLowerCase()]; }).map(function(s){
+      var obj = {};
+      for (var k in emptyForm) obj[k] = emptyForm[k];
+      for (var k2 in s) obj[k2] = s[k2];
+      obj.id = uid();
+      obj.createdAt = new Date().toISOString();
+      obj.updatedAt = obj.createdAt;
+      return obj;
+    });
+    if (nuevos.length === 0) return;
+    items = nuevos.concat(items);
+    save();
+    renderApp();
+  }
+
+  function loadNivel2Pack() {
+    var existing = {};
+    items.forEach(function(i){ existing[i.nombre.toLowerCase()] = true; });
+    var nuevos = NIVEL2_PACK.filter(function(s){ return !existing[s.nombre.toLowerCase()]; }).map(function(s){
       var obj = {};
       for (var k in emptyForm) obj[k] = emptyForm[k];
       for (var k2 in s) obj[k2] = s[k2];
@@ -858,8 +940,8 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: #C99A4B
 
     if (items.length === 0) {
       html += '<div class="starter-banner">' +
-        '<span>¿Empiezas desde cero? Carga las 10 apps "demasiado fáciles para ser verdad" para probarlas tú mismo.</span>' +
-        '<button class="btn-ghost" id="starter-btn">Cargar las 10 iniciales</button>' +
+        '<span>¿Empiezas desde cero? Carga el Nivel 1 (las 10 "demasiado fáciles para ser verdad") para probarlas tú mismo.</span>' +
+        '<button class="btn-ghost" id="starter-btn">Cargar Nivel 1</button>' +
       '</div>';
     }
 
@@ -891,7 +973,9 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: #C99A4B
         '<button class="view-btn' + (view==='tarjetas'?' view-btn-active':'') + '" data-action="view" data-value="tarjetas">Tarjetas</button>' +
         '<button class="view-btn' + (view==='tabla'?' view-btn-active':'') + '" data-action="view" data-value="tabla">Tabla</button>' +
       '</div>' +
-      (items.length > 0 ? '<button class="link-btn" id="starter-link-btn">+ agregar las 10 iniciales que falten</button>' : '') +
+      (items.length > 0 ? '<button class="link-btn" id="starter-link-btn">+ Nivel 1 que falte</button>' : '') +
+      '<button class="link-btn" id="tier2-link-btn">+ Nivel 2 (10 más)</button>' +
+      '<button class="link-btn" id="nivel2-btn">+ subir de nivel (pago confiable)</button>' +
       '<button class="link-btn" id="export-btn">↓ Exportar</button>' +
       '<button class="link-btn" id="import-btn">↑ Importar</button>' +
       '<input type="file" id="import-input" accept="application/json,.json" style="display:none" />' +
@@ -935,9 +1019,13 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: #C99A4B
     if (newBtn) newBtn.addEventListener("click", function () { openModal(null); });
 
     var starterBtn = document.getElementById("starter-btn");
-    if (starterBtn) starterBtn.addEventListener("click", loadStarterPack);
+    if (starterBtn) starterBtn.addEventListener("click", function () { loadPack(STARTER_PACK); });
     var starterLinkBtn = document.getElementById("starter-link-btn");
-    if (starterLinkBtn) starterLinkBtn.addEventListener("click", loadStarterPack);
+    if (starterLinkBtn) starterLinkBtn.addEventListener("click", function () { loadPack(STARTER_PACK); });
+    var tier2LinkBtn = document.getElementById("tier2-link-btn");
+    if (tier2LinkBtn) tier2LinkBtn.addEventListener("click", function () { loadPack(TIER2_PACK); });
+    var nivel2Btn = document.getElementById("nivel2-btn");
+    if (nivel2Btn) nivel2Btn.addEventListener("click", loadNivel2Pack);
 
     var exportBtn = document.getElementById("export-btn");
     if (exportBtn) exportBtn.addEventListener("click", exportData);
