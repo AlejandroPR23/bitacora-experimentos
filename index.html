@@ -286,6 +286,41 @@ h1 {
 }
 .money-balance { font-weight: 600; border-color: transparent; }
 .card-resultado { font-size: 12.5px; color: #9BAA9E; font-style: italic; margin: 0; line-height: 1.5; }
+
+/* ---------- Integración Trustpilot ---------- */
+.tp-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid #3A4A40;
+  background: rgba(0,0,0,0.15);
+  margin: 6px 0 2px;
+}
+.tp-badge .tp-star { font-size: 12px; }
+.tp-badge .tp-reviews { color: #9BAA9E; }
+.tp-delta { font-size: 10.5px; color: #9BAA9E; margin-left: 4px; }
+.tp-sync-bar {
+  max-width: 1080px;
+  margin: 0 auto 18px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: #9BAA9E;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.tp-sync-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+.tp-warn {
+  font-size: 10.5px;
+  color: #C99A4B;
+  border: 1px dashed #C99A4B;
+  border-radius: 3px;
+  padding: 1px 6px;
+  margin-left: 4px;
+}
 .card-actions { display: flex; gap: 6px; justify-content: flex-end; align-items: center; margin-top: 4px; }
 .icon-btn {
   background: transparent;
@@ -399,6 +434,26 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: #C99A4B
   "use strict";
 
   var STORAGE_KEY = "bitacora-experimentos-data";
+
+  // ---------- Integración con TrustPilot-Scraper (GitHub Pages) ----------
+  // El scraper publica latest_ratings.json en su propio GitHub Pages.
+  // La bitácora lo consume en vivo y lo cachea en localStorage como respaldo offline.
+  var TP_JSON_URL = "https://alejandropr23.github.io/TrustPilot-Scraper/output/latest_ratings.json";
+  var TP_CACHE_KEY = "bitacora-tp-cache";
+  var UMBRAL_ALERTA_TP = 3.0; // debajo de esto la tarjeta muestra advertencia
+
+  var tpData = null;      // { last_updated, ratings: [...] }
+  var tpIndex = null;     // mapa clave-normalizada -> rating
+  var tpStatus = "cargando"; // cargando | ok | cache | error
+  var syncMsg = null;     // mensaje transitorio de la sincronización push
+
+  // Push directo al repo del scraper vía API de GitHub (requiere token fine-grained)
+  var GH_OWNER = "AlejandroPR23";
+  var GH_REPO = "TrustPilot-Scraper";
+  var GH_BRANCH = "main";
+  var GH_CSV_PATH = "input_urls.csv";
+  var GH_WORKFLOW = "update-trustpilot.yml";
+  var GH_TOKEN_KEY = "bitacora-gh-token";
 
   var ESTADOS = [
     { value: "activo", label: "Activo", color: "#8FAE8B" },
@@ -518,7 +573,7 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: #C99A4B
   var emptyForm = {
     nombre: "", tipo: "app", categoria: "", pasos: "", fechaInicio: "",
     frecuencia: "", estado: "evaluando", calificacion: 0, efectividad: "evaluando",
-    ingresos: "", invertido: "", horas: "", resultado: ""
+    ingresos: "", invertido: "", horas: "", resultado: "", dominio: ""
   };
 
   // ---------- state ----------
@@ -573,6 +628,232 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: #C99A4B
     return (Number(ingresos) || 0) - (Number(invertido) || 0);
   }
   function estadoOf(v) { for (var i=0;i<ESTADOS.length;i++) if (ESTADOS[i].value===v) return ESTADOS[i]; return ESTADOS[2]; }
+
+  // ---------- Trustpilot: helpers ----------
+  function normalizeKey(str) {
+    return String(str == null ? "" : str)
+      .toLowerCase()
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // quita acentos
+      .replace(/\(.*?\)/g, "")                            // quita paréntesis
+      .replace(/\b(app|apps|the|www)\b/g, "")
+      .replace(/[^a-z0-9]/g, "");                        // solo alfanumérico
+  }
+  function domainCore(domain) {
+    // "www.swagbucks.com" -> "swagbucks"
+    var d = String(domain || "").toLowerCase().replace(/^www\./, "");
+    return normalizeKey(d.split(".")[0]);
+  }
+  function buildTpIndex() {
+    tpIndex = {};
+    if (!tpData || !tpData.ratings) return;
+    tpData.ratings.forEach(function (r) {
+      if (r.status !== "ok") return;
+      var keys = [];
+      if (r.domain) { keys.push(normalizeKey(r.domain)); keys.push(domainCore(r.domain)); }
+      if (r.nombre) keys.push(normalizeKey(r.nombre));
+      keys.forEach(function (k) { if (k && !tpIndex[k]) tpIndex[k] = r; });
+    });
+  }
+  function tpFor(item) {
+    if (!tpIndex) return null;
+    // 1. Match explícito por campo "dominio" del experimento
+    if (item.dominio) {
+      var d = normalizeKey(item.dominio);
+      if (tpIndex[d]) return tpIndex[d];
+      var dc = domainCore(item.dominio);
+      if (tpIndex[dc]) return tpIndex[dc];
+    }
+    // 2. Match automático por nombre
+    var n = normalizeKey(item.nombre);
+    if (tpIndex[n]) return tpIndex[n];
+    // 3. Match parcial (nombre contenido en clave o viceversa), mínimo 5 caracteres
+    if (n.length >= 5) {
+      for (var k in tpIndex) {
+        if (k.length >= 5 && (k.indexOf(n) === 0 || n.indexOf(k) === 0)) return tpIndex[k];
+      }
+    }
+    return null;
+  }
+  function tpColor(score) {
+    if (score >= 4) return "#8FAE8B";
+    if (score >= UMBRAL_ALERTA_TP) return "#C99A4B";
+    return "#B5564A";
+  }
+  function tpBadgeHtml(tp, miCalificacion) {
+    if (!tp) return "";
+    var score = Number(tp.trust_score) || 0;
+    var color = tpColor(score);
+    var delta = "";
+    if (Number(miCalificacion) > 0) {
+      var diff = (Number(miCalificacion) - score);
+      var signo = diff > 0 ? "+" : "";
+      delta = '<span class="tp-delta">(tú: ' + signo + diff.toFixed(1) + ')</span>';
+    }
+    var warn = score < UMBRAL_ALERTA_TP
+      ? '<span class="tp-warn">⚠ comunidad desconfía</span>' : "";
+    return '<div class="tp-badge" style="border-color:' + color + '" title="Calificación de la comunidad en Trustpilot (' + esc(tp.domain) + ')">' +
+      '<span class="tp-star" style="color:' + color + '">★</span>' +
+      '<span style="color:' + color + '">' + score.toFixed(1) + '</span>' +
+      '<span class="tp-reviews">' + Number(tp.numero_reviews || 0).toLocaleString() + ' reseñas</span>' +
+      delta + warn +
+    '</div>';
+  }
+
+  // ---------- Trustpilot: carga de datos ----------
+  function applyTpData(data, status) {
+    tpData = data;
+    tpStatus = status;
+    buildTpIndex();
+    renderApp();
+  }
+  function fetchTrustpilot() {
+    fetch(TP_JSON_URL, { cache: "no-store" })
+      .then(function (res) {
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        return res.json();
+      })
+      .then(function (data) {
+        try { localStorage.setItem(TP_CACHE_KEY, JSON.stringify(data)); } catch (e) {}
+        applyTpData(data, "ok");
+      })
+      .catch(function () {
+        // Respaldo: cache local de la última sincronización exitosa
+        try {
+          var raw = localStorage.getItem(TP_CACHE_KEY);
+          if (raw) { applyTpData(JSON.parse(raw), "cache"); return; }
+        } catch (e) {}
+        tpStatus = "error";
+        renderApp();
+      });
+  }
+
+  // ---------- Trustpilot: exportar CSV de entrada para el scraper ----------
+  function buildScraperCsv() {
+    // Genera input_urls.csv con columna "active" a partir de la bitácora:
+    // los experimentos descartados quedan en FALSE para no gastar scraping en ellos.
+    var lines = ["url,notes,active,category"];
+    var seen = {};
+    items.forEach(function (i) {
+      var slug = i.dominio
+        ? String(i.dominio).toLowerCase().replace(/^https?:\/\//, "").replace(/\/.*$/, "")
+        : null;
+      var tp = tpFor(i);
+      if (!slug && tp) slug = tp.domain;
+      if (!slug) return; // sin dominio conocido no se puede scrapear
+      if (seen[slug]) return;
+      seen[slug] = true;
+      var url = "https://www.trustpilot.com/review/" + slug;
+      var active = i.estado === "descartado" ? "FALSE" : "TRUE";
+      var notes = (i.nombre || "").replace(/[",\n]/g, " ");
+      var cat = (i.tipo || "").replace(/[",\n]/g, " ");
+      lines.push(url + "," + notes + "," + active + "," + cat);
+    });
+    return lines.join("\n");
+  }
+
+  function exportScraperCsv() {
+    var blob = new Blob([buildScraperCsv()], { type: "text/csv" });
+    var url2 = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url2;
+    a.download = "input_urls.csv";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url2);
+  }
+
+  // ---------- Trustpilot: push directo al repo del scraper + disparo del workflow ----------
+  function getGhToken() {
+    var t = null;
+    try { t = localStorage.getItem(GH_TOKEN_KEY); } catch (e) {}
+    if (!t) {
+      t = window.prompt(
+        "Pega tu token fine-grained de GitHub (solo repo " + GH_REPO + ", permisos: Contents y Actions en Read/Write).\n\n" +
+        "Se guarda únicamente en el localStorage de ESTE navegador. Créalo en:\n" +
+        "GitHub → Settings → Developer settings → Fine-grained tokens"
+      );
+      if (t) {
+        t = t.trim();
+        try { localStorage.setItem(GH_TOKEN_KEY, t); } catch (e) {}
+      }
+    }
+    return t || null;
+  }
+  function ghHeaders(token) {
+    return {
+      "Authorization": "Bearer " + token,
+      "Accept": "application/vnd.github+json",
+      "X-GitHub-Api-Version": "2022-11-28"
+    };
+  }
+  function toBase64Utf8(str) {
+    return btoa(unescape(encodeURIComponent(str)));
+  }
+  function setSyncMsg(msg) { syncMsg = msg; renderApp(); }
+
+  function syncToScraper() {
+    var token = getGhToken();
+    if (!token) { setSyncMsg("Sincronización cancelada: falta el token."); return; }
+    var csv = buildScraperCsv();
+    if (csv.indexOf("\n") === -1) {
+      setSyncMsg("Nada que sincronizar: ningún experimento tiene dominio o match con Trustpilot.");
+      return;
+    }
+    var base = "https://api.github.com/repos/" + GH_OWNER + "/" + GH_REPO;
+    var fileUrl = base + "/contents/" + GH_CSV_PATH + "?ref=" + GH_BRANCH;
+    setSyncMsg("Subiendo lista de sitios al scraper…");
+
+    // 1. Obtener SHA actual del archivo (404 = aún no existe, se crea)
+    fetch(fileUrl, { headers: ghHeaders(token) })
+      .then(function (res) {
+        if (res.status === 404) return { sha: null };
+        if (res.status === 401 || res.status === 403) throw new Error("token");
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        return res.json();
+      })
+      // 2. Crear/actualizar input_urls.csv
+      .then(function (info) {
+        var body = {
+          message: "Sync input_urls.csv desde la bitácora (" + new Date().toISOString().slice(0, 16) + ")",
+          content: toBase64Utf8(csv),
+          branch: GH_BRANCH
+        };
+        if (info.sha) body.sha = info.sha;
+        return fetch(base + "/contents/" + GH_CSV_PATH, {
+          method: "PUT",
+          headers: ghHeaders(token),
+          body: JSON.stringify(body)
+        });
+      })
+      .then(function (res) {
+        if (res.status === 401 || res.status === 403) throw new Error("token");
+        if (!res.ok) throw new Error("No se pudo escribir el CSV (HTTP " + res.status + ")");
+        // 3. Disparar el workflow para scrapear ya mismo
+        return fetch(base + "/actions/workflows/" + GH_WORKFLOW + "/dispatches", {
+          method: "POST",
+          headers: ghHeaders(token),
+          body: JSON.stringify({ ref: GH_BRANCH })
+        });
+      })
+      .then(function (res) {
+        if (res.status === 204) {
+          setSyncMsg("✓ Lista subida y scraper disparado. Las calificaciones nuevas aparecerán aquí en unos minutos (recarga la página).");
+        } else if (res.status === 401 || res.status === 403) {
+          throw new Error("token");
+        } else {
+          setSyncMsg("CSV subido, pero no se pudo disparar el workflow (HTTP " + res.status + "). Revisa que el token tenga permiso de Actions, o córrelo manualmente en la pestaña Actions.");
+        }
+      })
+      .catch(function (err) {
+        if (err && err.message === "token") {
+          try { localStorage.removeItem(GH_TOKEN_KEY); } catch (e) {}
+          setSyncMsg("Token inválido o sin permisos. Se borró de este navegador; vuelve a intentar con uno nuevo (Contents + Actions, Read/Write).");
+        } else {
+          setSyncMsg("Error al sincronizar: " + (err && err.message ? err.message : "desconocido"));
+        }
+      });
+  }
   function tipoOf(v) { for (var i=0;i<TIPOS.length;i++) if (TIPOS[i].value===v) return TIPOS[i]; return TIPOS[0]; }
   function efOf(v) { for (var i=0;i<EFECTIVIDAD.length;i++) if (EFECTIVIDAD[i].value===v) return EFECTIVIDAD[i]; return EFECTIVIDAD[2]; }
 
@@ -756,6 +1037,8 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: #C99A4B
           '</select></label>' +
           '<label class="field"><span>Categoría</span><input id="f-categoria" value="' + esc(data.categoria) + '" placeholder="Encuestas, blogging, trading…"/></label>' +
         '</div>' +
+        '<label class="field"><span>Dominio (para cruzar con Trustpilot)</span>' +
+          '<input id="f-dominio" value="' + esc(data.dominio || "") + '" placeholder="Ej. swagbucks.com — vacío = match automático por nombre"/></label>' +
         '<label class="field"><span>Pasos / cómo lo hiciste</span><textarea id="f-pasos" rows="3" placeholder="Describe brevemente el proceso que seguiste">' + esc(data.pasos) + '</textarea></label>' +
         '<div class="field-row">' +
           '<label class="field"><span>Fecha de inicio</span><input id="f-fecha" type="date" value="' + esc(data.fechaInicio) + '"/></label>' +
@@ -838,6 +1121,7 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: #C99A4B
       invertido: invertidoVal === "" ? 0 : (Number(invertidoVal) || 0),
       horas: horasVal === "" ? 0 : (Number(horasVal) || 0),
       resultado: document.getElementById("f-resultado").value,
+      dominio: document.getElementById("f-dominio").value.trim(),
       updatedAt: new Date().toISOString()
     };
     if (modalEditingId) {
@@ -865,6 +1149,7 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: #C99A4B
     var tarifa = tarifaHora(item.ingresos, item.horas);
     var balance = balanceOf(item.ingresos, item.invertido);
     var hasMoney = Number(item.ingresos) > 0 || Number(item.invertido) > 0;
+    var tp = tpFor(item);
     var actionsHtml;
     if (confirmDeleteId === item.id) {
       actionsHtml =
@@ -883,6 +1168,7 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: #C99A4B
         '<h3 class="card-title">' + esc(item.nombre) + '</h3>' +
         (item.categoria ? '<div class="card-category">' + esc(item.categoria) + '</div>' : '') +
         starsHtml(item.calificacion, 15) +
+        tpBadgeHtml(tp, item.calificacion) +
         (item.pasos ? '<p class="card-text">' + esc(item.pasos) + '</p>' : '') +
         '<div class="card-meta">' + (item.fechaInicio ? 'Desde ' + esc(item.fechaInicio) : '') + (item.frecuencia ? ' · ' + esc(item.frecuencia) : '') + '</div>' +
         '<div class="card-bottom">' +
@@ -906,12 +1192,17 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: #C99A4B
     var estado = estadoOf(item.estado);
     var tarifa = tarifaHora(item.ingresos, item.horas);
     var balance = balanceOf(item.ingresos, item.invertido);
+    var tp = tpFor(item);
+    var tpCell = tp
+      ? '<span style="color:' + tpColor(Number(tp.trust_score)) + '">' + Number(tp.trust_score).toFixed(1) + '</span>'
+      : '—';
     return (
       '<tr class="table-row" data-action="edit" data-id="' + item.id + '">' +
         '<td class="table-name">' + esc(item.nombre) + '</td>' +
         '<td>' + esc(tipoOf(item.tipo).label) + '</td>' +
         '<td style="color:' + estado.color + '">' + esc(estado.label) + '</td>' +
         '<td>' + (item.calificacion || 0) + '</td>' +
+        '<td>' + tpCell + '</td>' +
         '<td style="color:' + ef.color + '">' + esc(ef.label) + '</td>' +
         '<td>' + (Number(item.horas) || 0) + '</td>' +
         '<td>$' + Number(item.invertido || 0).toLocaleString() + '</td>' +
@@ -937,6 +1228,21 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: #C99A4B
       '</div>' +
       '<button class="btn-primary" id="new-btn">+ Nuevo experimento</button>' +
     '</div>';
+
+    // Barra de estado de la sincronización con el scraper de Trustpilot
+    var tpDotColor = tpStatus === "ok" ? "#8FAE8B" : (tpStatus === "cache" ? "#C99A4B" : (tpStatus === "cargando" ? "#9BB6C9" : "#B5564A"));
+    var tpMsg;
+    if (tpStatus === "ok" && tpData) {
+      tpMsg = "Trustpilot sincronizado · " + (tpData.successful || 0) + "/" + (tpData.total_sites || 0) + " sitios · actualizado " + String(tpData.last_updated || "").slice(0, 10);
+    } else if (tpStatus === "cache" && tpData) {
+      tpMsg = "Trustpilot sin conexión — usando última copia local (" + String(tpData.last_updated || "").slice(0, 10) + ")";
+    } else if (tpStatus === "cargando") {
+      tpMsg = "Sincronizando calificaciones de Trustpilot…";
+    } else {
+      tpMsg = "No se pudo cargar el JSON del scraper. Verifica que GitHub Pages esté activo en TrustPilot-Scraper.";
+    }
+    html += '<div class="tp-sync-bar"><span class="tp-sync-dot" style="background:' + tpDotColor + '"></span>' + esc(tpMsg) +
+      (syncMsg ? '<span style="color:#C99A4B">· ' + esc(syncMsg) + '</span>' : '') + '</div>';
 
     if (items.length === 0) {
       html += '<div class="starter-banner">' +
@@ -977,6 +1283,8 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: #C99A4B
       '<button class="link-btn" id="tier2-link-btn">+ Nivel 2 (10 más)</button>' +
       '<button class="link-btn" id="nivel2-btn">+ subir de nivel (pago confiable)</button>' +
       '<button class="link-btn" id="export-btn">↓ Exportar</button>' +
+      '<button class="link-btn" id="scraper-csv-btn" title="Descarga input_urls.csv para commitearlo manualmente al repo TrustPilot-Scraper">↓ CSV scraper</button>' +
+      '<button class="link-btn" id="scraper-sync-btn" title="Sube input_urls.csv directo al repo del scraper y dispara el workflow (requiere token de GitHub)">⇡ Sync scraper</button>' +
       '<button class="link-btn" id="import-btn">↑ Importar</button>' +
       '<input type="file" id="import-input" accept="application/json,.json" style="display:none" />' +
     '</div></div>';
@@ -999,7 +1307,7 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: #C99A4B
       '</p></div>';
     } else if (view === "tabla") {
       html += '<div class="table-wrap"><table class="table"><thead><tr>' +
-        '<th>Nombre</th><th>Tipo</th><th>Estado</th><th>★</th><th>Efectividad</th><th>Horas</th><th>Invertido</th><th>Ingreso</th><th>$/hora</th><th>Neto</th>' +
+        '<th>Nombre</th><th>Tipo</th><th>Estado</th><th>★</th><th>TP ★</th><th>Efectividad</th><th>Horas</th><th>Invertido</th><th>Ingreso</th><th>$/hora</th><th>Neto</th>' +
         '</tr></thead><tbody>';
       list.forEach(function (item) { html += tableRowHtml(item); });
       html += '</tbody></table></div>';
@@ -1029,6 +1337,10 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: #C99A4B
 
     var exportBtn = document.getElementById("export-btn");
     if (exportBtn) exportBtn.addEventListener("click", exportData);
+    var scraperCsvBtn = document.getElementById("scraper-csv-btn");
+    if (scraperCsvBtn) scraperCsvBtn.addEventListener("click", exportScraperCsv);
+    var scraperSyncBtn = document.getElementById("scraper-sync-btn");
+    if (scraperSyncBtn) scraperSyncBtn.addEventListener("click", syncToScraper);
     var importBtn = document.getElementById("import-btn");
     if (importBtn) importBtn.addEventListener("click", triggerImport);
     var importInput = document.getElementById("import-input");
@@ -1060,6 +1372,7 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: #C99A4B
   // ---------- init ----------
   load();
   renderApp();
+  fetchTrustpilot();
 })();
 </script>
 </body>
